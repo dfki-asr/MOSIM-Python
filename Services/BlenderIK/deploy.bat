@@ -9,7 +9,7 @@ ECHO [33mdeploy.bat[0m at %cd%\deploy.bat Deploying the BlenderIK Service.
 ECHO _______________________________________________________
 ECHO.
 
-SET MOSIM=git+https://github.com/dfki-asr/MMIPython-Core.git@feature/InitialSetup
+SET MOSIM=git+https://github.com/dfki-asr/MMIPython-Core.git
 
 IF NOT EXIST blender-2.83.10-windows64.zip (
   ECHO Downloading Blender. This may take a while. [92mPlease wait[0m and consider the download progress on top of the console. 
