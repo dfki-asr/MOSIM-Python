@@ -1,5 +1,5 @@
-from MOSIM.mmi.math.ttypes import MVector3, MQuaternion
-from MOSIM.mmi.avatar.ttypes import MAvatarPosture, MJoint, MJointType, MChannel, MAvatarPostureValues
+from MMIStandard.math.ttypes import MVector3, MQuaternion
+from MMIStandard.avatar.ttypes import MAvatarPosture, MJoint, MJointType, MChannel, MAvatarPostureValues
 
 import json, uuid
 

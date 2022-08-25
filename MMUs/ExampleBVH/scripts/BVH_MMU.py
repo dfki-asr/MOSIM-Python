@@ -1,8 +1,8 @@
 from MOSIM.core.interfaces.motion_model_interface import MotionModelInterface
-from MOSIM.mmi.core.ttypes import MBoolResponse, MIPAddress
-from MOSIM.mmi.mmu.ttypes import MInstruction, MSimulationState, MSimulationResult, MSimulationEvent
+from MMIStandard.core.ttypes import MBoolResponse, MIPAddress
+from MMIStandard.mmu.ttypes import MInstruction, MSimulationState, MSimulationResult, MSimulationEvent
 MSimulationEvent_End = "end"
-from MOSIM.mmi.math.ttypes import MQuaternion, MVector3
+from MMIStandard.math.ttypes import MQuaternion, MVector3
 
 from .helpers import * 
 
