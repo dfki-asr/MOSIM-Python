@@ -194,7 +194,7 @@ class BVH_Streamer(MotionModelInterface):
         return MBoolResponse(True)
 
 
-    def Dispose(self, parameters):
+    def Dispose(self, avatarID, parameters):
         """
         A method for disposing the internally used resources
         
@@ -211,7 +211,7 @@ class BVH_Streamer(MotionModelInterface):
         return MBoolResponse(True)
 
 
-    def CreateCheckpoint(self):
+    def CreateCheckpoint(self, avatarID):
         """
         Creates a Checkpoint
         
@@ -228,7 +228,7 @@ class BVH_Streamer(MotionModelInterface):
         return []
 
 
-    def RestoreCheckpoint(self, data):
+    def RestoreCheckpoint(self, data, avatarID):
         """
         Restores the checkpoint from the data
         
@@ -244,7 +244,7 @@ class BVH_Streamer(MotionModelInterface):
         return MBoolResponse(True)
 
 
-    def ExecuteFunction(self, name, parameters):
+    def ExecuteFunction(self, name, parameters, avatarID):
         """
         //Method for executing an arbitrary function (optionally)
         Parameters:
