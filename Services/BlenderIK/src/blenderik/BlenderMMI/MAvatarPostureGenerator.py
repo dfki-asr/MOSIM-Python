@@ -11,8 +11,8 @@ import json
 #print(bpy.path.abspath("//"))
 #sys.path.append(bpy.path.abspath("//"))
 
-from MOSIM.mmi.avatar.ttypes import MAvatarPosture, MJoint, MJointType, MChannel
-from MOSIM.mmi.math.ttypes import MQuaternion, MVector3
+from MMIStandard.avatar.ttypes import MAvatarPosture, MJoint, MJointType, MChannel
+from MMIStandard.math.ttypes import MQuaternion, MVector3
 
 #from BlenderMMI.IntermediateSkeletonApplication import IntermediateSkeletonApplication
 

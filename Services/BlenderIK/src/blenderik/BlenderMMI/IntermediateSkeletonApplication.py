@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # MOSIM This only belongs in the Adapter! Refactor
-import MOSIM.mmi.avatar.ttypes as tavatar
+import MMIStandard.avatar.ttypes as tavatar
 
 #Blender
 import bpy

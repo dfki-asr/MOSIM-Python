@@ -3,9 +3,9 @@ from typing import Dict
 import logging
 
 # MOSIM-declarations
-import MOSIM.mmi.services.MMIServiceBase
-from MOSIM.mmi.avatar.ttypes import MAvatarDescription
-from MOSIM.mmi.core.ttypes import MServiceDescription, MBoolResponse
+import MMIStandard.services.MMIServiceBase
+from MMIStandard.avatar.ttypes import MAvatarDescription
+from MMIStandard.core.ttypes import MServiceDescription, MBoolResponse
 
 logger = logging.getLogger(__name__)
 

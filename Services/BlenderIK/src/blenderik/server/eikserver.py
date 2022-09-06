@@ -30,10 +30,10 @@ from mathutils import Vector, Quaternion
 
 
 # MOSIM-declarations
-from MOSIM.mmi.services import MInverseKinematicsService
-from MOSIM.mmi.register import MMIRegisterService
-from MOSIM.mmi.avatar.ttypes import MAvatarDescription
-from MOSIM.mmi.core.ttypes import MIPAddress, MBoolResponse, MServiceDescription
+from MMIStandard.services import MInverseKinematicsService
+from MMIStandard.register import MMIRegisterService
+from MMIStandard.avatar.ttypes import MAvatarDescription
+from MMIStandard.core.ttypes import MIPAddress, MBoolResponse, MServiceDescription
 
 # Load from BlenderIKService
 from BlenderMMI.MAvatarPostureGenerator import JSON2MAvatarPosture

@@ -3,7 +3,7 @@ import math
 from typing import Tuple
 
 #import MOSIM.mmi.mmu.ttypes as tmmu
-from MOSIM.mmi.constraints.ttypes import MInterval, MInterval3
+from MMIStandard.constraints.ttypes import MInterval, MInterval3
 
 def intervalCenter(limit: MInterval) -> float:
 

@@ -15,11 +15,11 @@ from BlenderMMI.IntermediateSkeletonApplication import IntermediateSkeletonAppli
 from server import convert, check
 
 # MOSIM-declarations
-from MOSIM.mmi.services import MInverseKinematicsService
-from MOSIM.mmi.services.ttypes import MIKProperty, MIKServiceResult, MIKOperationType
-from MOSIM.mmi.avatar.ttypes import MAvatarPostureValues, MEndeffectorType, MJointType
-from MOSIM.mmi.core.ttypes import MBoolResponse
-from MOSIM.mmi.constraints.ttypes import MConstraint, MJointConstraint
+from MMIStandard.services import MInverseKinematicsService
+from MMIStandard.services.ttypes import MIKProperty, MIKServiceResult, MIKOperationType
+from MMIStandard.avatar.ttypes import MAvatarPostureValues, MEndeffectorType, MJointType
+from MMIStandard.core.ttypes import MBoolResponse
+from MMIStandard.constraints.ttypes import MConstraint, MJointConstraint
 
 
 logger = logging.getLogger(__name__)

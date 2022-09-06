@@ -1,6 +1,6 @@
 from mathutils import Vector
-#import MOSIM.mmi.mmu.ttypes as tmmu
-from MOSIM.mmi.constraints.ttypes import MInterval, MInterval3
+#import MMIStandard.mmu.ttypes as tmmu
+from MMIStandard.constraints.ttypes import MInterval, MInterval3
 
 from typing import Tuple
     
