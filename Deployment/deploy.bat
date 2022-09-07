@@ -48,7 +48,7 @@ REM Method Section
 		exit /b 0
 	)
 	
-	SET REPO=%~dp0..\
+	SET REPO=%~dp0..
 
 	IF "%1"=="" (
 		ECHO Taking default MOSIM Target Path "%MOSIM_TARGET_PATH%"
@@ -140,7 +140,7 @@ exit /b 0
 	  call :safeCall .\deploy.bat "There has been an error when deploying %1" %back%
 	  cd %back%
 	  if not [%2]==[] (
-		  md ".\%BUILDENV%\%2"
+		  md "%BUILDENV%\%2"
 		  echo  "%1\%3\*" "%BUILDENV%\%2\"
 		  cmd /c xcopy /S/Y/Q "%1\%3\*" "%BUILDENV%\%2\"
 		  if %ERRORLEVEL% NEQ 0 echo There has been an error during copy. 
