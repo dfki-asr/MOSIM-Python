@@ -48,6 +48,13 @@ DEFAULT_CONFIG = {
     }
 }
 def run(config, cli_args):
+    if cli_args.internal_address:
+        ip, port = cli_args.internal_address.split(':')
+        if not "socket_address" in config["IKSERVER"] or config["IKSERVER"]["socket_address"] != "":
+            config["IKSERVER"]["socket_address"] = ip
+        config["IKSERVER"]["socket_port"] = port
+        
+        
     if cli_args.registry:
         ip, port = cli_args.registry.split(':')
         logger.info("Registry: Overwrite Config with CLI-Argument %s:%s", ip, port)
@@ -58,7 +65,12 @@ def run(config, cli_args):
         ip, port = cli_args.address.split(':')
         logger.info("Address: Overwrite Config with CLI-Argument %s:%s", ip, port)
         config['IKSERVER']['address'] = ip
-        config['IKSERVER']['socket_address'] = ip
+        if not "socket_address" in config["IKSERVER"]:
+            config['IKSERVER']['socket_address'] = ip
+            
+        if not "socket_port" in config["IKSERVER"]:
+            config["IKSERVER"]["socket_port"] = port
+            
         config['IKSERVER']['port'] = port
     if cli_args.listenAll:
         config["IKSERVER"]["socket_address"] = ""
@@ -73,9 +85,10 @@ def run(config, cli_args):
     IKServer.init_thrift(
         config.get('IKSERVER', 'address'), 
         config.get('IKSERVER', 'socket_address'), 
-        config.getint('IKSERVER', 'port')
+        config.getint('IKSERVER', 'port'),
+        config.getint('IKSERVER', 'socket_port')
     )
-        
+    
     IKServer.register(
         config.get('REGISTERSERVICE', 'address'), 
         config.getint('REGISTERSERVICE', 'port')
@@ -132,6 +145,9 @@ if __name__ == '__main__':
     run_parser = subparsers.add_parser('run', help="Start Service")
     run_parser.add_argument('-a', '--address', 
         help="Address and Port under which the Server will operate",
+        default='')
+    run_parser.add_argument('-aint', '--internal_address', 
+        help="Address and Port under which the Server will be started internally",
         default='')
     run_parser.add_argument('-r', '--registry',
         help="Address of the MOSIM-Registry Service",

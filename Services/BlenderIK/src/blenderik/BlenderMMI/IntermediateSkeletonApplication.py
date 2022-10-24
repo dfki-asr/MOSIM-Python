@@ -1,6 +1,8 @@
 # std-Library
 from typing import List, Optional, Union
 import logging
+
+from macpath import join
 logger = logging.getLogger(__name__)
 
 # MOSIM This only belongs in the Adapter! Refactor
@@ -15,6 +17,8 @@ def MVector2Vector(v) -> Vector:
 
 def MQuaternion2Quaternion(q) -> Quaternion:
     return Quaternion((-q.W, -q.X, q.Y, q.Z))
+
+VIRTUAL_JOINTS = ["LeftShoulder", "RightShoulder", "LeftHip", "RightHip"]
 
 class IntermediateSkeletonApplication():
     """
@@ -45,14 +49,17 @@ class IntermediateSkeletonApplication():
         # }
         
     effectorMap = { # Mosim-Name: (blenderbonename, Offset-Correction)
-        'RightHand':('RightWrist', Quaternion()), 
-        'LeftHand': ('LeftWrist', Quaternion()),
-        'RightFoot': ('RightAnkle', Quaternion()),
-        'LeftFoot': ('LeftFoot', Quaternion()),
-        'RightWrist':('RightWrist', Quaternion()), 
-        'LeftWrist': ('LeftWrist', Quaternion()),
-        'RightFoot': ('RightAnkle', Quaternion()),
-        'LeftFoot': ('LeftFoot', Quaternion()),
+        # 'RightHand':('RightWrist', "RightElbow", Quaternion()), 
+        # 'LeftHand': ('LeftWrist', "LeftElbow", Quaternion()),
+        'RightAnkle': ('RightAnkle', "RightAnkle", Quaternion()),
+        'LeftAnkle': ('LeftAnkle',"LeftAnkle", Quaternion()),
+        'RightWrist':('RightWrist',"RightWrist", Quaternion()), 
+        'LeftWrist': ('LeftWrist',"LeftWrist", Quaternion()),
+        'T1T2Joint' : ("T1T2Joint", "T1T2Joint", Quaternion())
+        # 'RightWrist':('RightWrist',"RightElbow", Quaternion()), 
+        # 'LeftWrist': ('LeftWrist',"LeftElbow", Quaternion()),
+        # 'RightFoot': ('RightAnkle',"RightKnee", Quaternion()),
+        # 'LeftFoot': ('LeftAnkle',"LeftKnee", Quaternion()),
         }
     
     def __init__(self, avatar_id, posture: Optional[tavatar.MAvatarPosture] = None):
@@ -70,6 +77,7 @@ class IntermediateSkeletonApplication():
             for bone in self.object.pose.bones if bone.constraints.get('IK')
         }
         logger.debug(f"Found {len(self.ikConstraints)} ik-constraints: [{self.ikConstraints.keys()}]")
+        [logger.debug("   c: %s: %s"%(bone, self.ikConstraints[bone])) for bone in self.ikConstraints]
         
         self.copyConstraints = {bone.name: bone.constraints.get('Copy Rotation') 
             for bone in self.object.pose.bones if bone.constraints.get('Copy Rotation')
@@ -125,12 +133,16 @@ class IntermediateSkeletonApplication():
         """Puts the IK Bones in Blender at the Position of their associated 
         Bones. This is important, since the ApplyPostureValues-Method does not 
         move IK-Bones."""
-        
+
         if id is not None:
-            logger.debug("Reset Position of IK Bone %s.", id)
-            bone = self.object.pose.bones[id]
-            ikbone = self.object.pose.bones[id+'IK'] # use Effector-Map
-            ikbone.matrix = bone.matrix
+            if not id in self.ikConstraints.keys():
+                id = self.effectorMap[id][1]
+            ikid = self.ikConstraints[id].subtarget
+            if(ikid is not None):
+                logger.debug("Reset Position of IK Bone %s.", id)
+                bone = self.object.pose.bones[id]
+                ikbone = self.object.pose.bones[ikid]#[id+'IK'] # use Effector-Map
+                ikbone.matrix = bone.matrix
         else:
             for name in self.ikConstraints.keys():
                 self.resetBoneMatrix(name)
@@ -161,31 +173,53 @@ class IntermediateSkeletonApplication():
             b.location = Vector((0,0,0))
 
         bpy.context.view_layer.update()
-        
-        for j in posture.Joints:
-            # first iteration: set joint heads. 
-            #logger.debug('set joint head for %s', j.ID)
-            b = edit_bones[j.ID]
-            parent_rotation = Quaternion() if j.Parent is None else Quaternion(b.parent["globalRot"])
-            
+
+        def setGlobalRot(b, j, parent):
+            #if not j.Parent is None:
+            #    print("setGlobalRot", b.name, j.ID, parent.name)
+            parent_rotation = Quaternion() if j.Parent is None else Quaternion(parent["globalRot"])#(b.parent["globalRot"])
             # global rotation of this joint
             rotation = parent_rotation @  MQuaternion2Quaternion(j.Rotation)
             b["globalRot"] = rotation
             
             # global position of this joint
-            parent_pos = Vector() if j.Parent is None else b.parent.head
+            parent_pos = Vector() if j.Parent is None else parent.head #b.parent.head
             b.head = parent_pos + parent_rotation @ MVector2Vector(j.Position)
-            
+        
         for j in posture.Joints:
-            # second iteration: set joint tails
+            # first iteration: set joint heads. 
+            #logger.debug('set joint head for %s', j.ID)
             b = edit_bones[j.ID]
-            if len(b.children) == 0:
+            parent = b.parent
+            setGlobalRot(b, j, parent)
+            if(j.ID in VIRTUAL_JOINTS):
+                b_ = edit_bones[j.ID + "V"]
+                b_["globalRot"] = b["globalRot"]
+                b_.head = 1.0 * b.head
+            
+        def SetTail(b, child):
+            if child is None:#len(b.children) == 0:
                 # in case of a tip joint, set size to a very small value
                 b.tail = b.head + Quaternion(b.parent["globalRot"]) @ Vector((0,0.01,0))
             else:
                 # in case there is a child, due to the design of the intermediate skeleton, 
                 # the first child is always the child were the joint is pointing to. 
-                b.tail = b.children[0].head
+                b.tail = child.head #b.children[0].head
+
+        for j in posture.Joints:
+            # second iteration: set joint tails
+            b = edit_bones[j.ID]
+            child = None
+            if(j.ID in VIRTUAL_JOINTS):
+                b_ = edit_bones[j.ID + "V"]
+                SetTail(b, b_.children[0])
+                b_.tail = 1.0 * b.tail
+                #SetTail(b_, b_.children[0])
+            else:
+                if(len(b.children) > 0):
+                    child = b.children[0]
+                SetTail(b, child)
+            
 
         bpy.ops.object.mode_set(mode="OBJECT", toggle=False)    
         bpy.context.view_layer.update()
@@ -215,8 +249,7 @@ class IntermediateSkeletonApplication():
         self.disableAllConstraints()
         i = 0
         for joint in self.posture.Joints:
-            posebone = self.object.pose.bones[joint.ID]
-            
+            posebone = self.object.pose.bones[joint.ID]            
             t = Vector()
             q = Quaternion()
             
@@ -243,15 +276,21 @@ class IntermediateSkeletonApplication():
                 #logger.debug("Apply value %f to joint [%s] in channel %s", values[i], joint.ID, channel)
                 i += 1
 
-            if joint.ID == 'RightWrist' or joint.ID == 'RightMiddleMeta':
-                logger.debug('Apply Position [%s] and Quaternion [%s] to [%s]', t, q, joint.ID)
-            
             # we can directly set the rotations and locations, due to the fact 
             # that we set up the blender rig exactly as the intermediate skeleton. 
             #logger.debug("from vector %s and Quaternion %s at bone %s", posebone.location, posebone.rotation_quaternion, posebone.name)
             #logger.debug("Apply vector %s and Quaternion %s to bone %s", t, q, posebone.name)
-            posebone.rotation_quaternion = Quaternion(q)
-            posebone.location = Vector(t)
+
+            if joint.ID in VIRTUAL_JOINTS:
+                vpb = self.object.pose.bones[joint.ID + "V"]
+                vpb.rotation_quaternion = Quaternion(q)
+                vpb.location = Vector(t)
+                posebone.rotation_quaternion = Quaternion()
+                posebone.location = Vector()
+            else:
+                posebone.rotation_quaternion = Quaternion(q)
+                posebone.location = Vector(t)
+
             
         return
     
@@ -283,15 +322,18 @@ class IntermediateSkeletonApplication():
         bpy.context.view_layer.update()
 
         for joint in self.posture.Joints:
+            jointid = joint.ID
+            for vbone in VIRTUAL_JOINTS:
+                jointid = jointid.replace(vbone, vbone + "V")
             matrix = bpy.data.objects['lalala'].convert_space(
-                pose_bone=bpy.data.objects['lalala'].pose.bones[joint.ID],
-                matrix=bpy.data.objects['lalala'].pose.bones[joint.ID].matrix, 
+                pose_bone=bpy.data.objects['lalala'].pose.bones[jointid],
+                matrix=bpy.data.objects['lalala'].pose.bones[jointid].matrix, 
                 from_space='WORLD', to_space='LOCAL'
             )
             q = matrix.to_quaternion()
             t = matrix.translation
-            if joint.ID=='RightWrist':
-                logger.debug("loop of ReadMAvatarPostureValues: RightWrist at position: %s, %s", t, q)
+            #if joint.ID=='RightWrist':
+            #    logger.debug("loop of ReadMAvatarPostureValues: RightWrist at position: %s, %s", t, q)
 
             # coordinate system transforms: 
             # translation (x,y,z) -> (-x, y, z)
@@ -327,28 +369,39 @@ class IntermediateSkeletonApplication():
             target       : Vector of scene coordinates. Its attributes are x, y and z
         """
         
-        logger.debug("Call to AddPositionConstraint")
+        logger.debug("Call to AddPositionConstraint %s"%joint_in)
         
-        effector, offset = self.effectorMap.get(joint_in, (None, None))
-        if effector is None:
+        ikTarget, ikConstraint, offset = self.effectorMap.get(joint_in, (None, None))
+        if ikTarget is None:
             raise Exception(f"Unknown id for joint_in [{joint_in}]")
         
-        self.enableIKConstraint(effector)
+        self.enableIKConstraint(ikConstraint)
         
         # Blender pose bones: joint_in-related bones
         o           = self.object  # Blender's armature
-        IKTarget      = o.pose.bones[effector + "IK"]
-        HandBone      = o.pose.bones[effector] 
-        
-        # Blender pose bones: auxiliary bones
-        PelvisCenter = o.pose.bones["PelvisCenter"]
-        RightAnkle   = o.pose.bones["RightAnkle"]       
-        LeftAnkle    = o.pose.bones["LeftAnkle"]  
-        RightAnkleIK  = o.pose.bones["RightAnkleIK"] # available in IKService_play.blend  
-        LeftAnkleIK   = o.pose.bones["LeftAnkleIK"]  # available in IKService_play.blend 
+        IKTarget      = o.pose.bones[self.ikConstraints[ikConstraint].subtarget] #o.pose.bones[ikTarget + "IK"]
+        HandBone      = o.pose.bones[ikTarget] 
         
         # Set the IKTarget to the desired position
         IKTarget.matrix.translation    = target # In armature coordinates
+
+        if("Wrist" in HandBone.name):
+            self.enableIKConstraint("T1T2Joint")
+
+        bpy.context.view_layer.update()
+
+        # check distance
+        # if("Wrist" in HandBone.name):
+        #     direction = target - HandBone.matrix.translation
+        #     spine_pos = o.pose.bones["PelvisCenter"].matrix.translation
+        #     d2 = target - spine_pos
+        #     if(direction.magnitude > 0.01):
+        #         print("spine required %.3f"%(direction.magnitude), direction)
+        #         self.AddPositionConstraint("T1T2Joint", goal)
+        #         bpy.context.view_layer.update()
+        #         i += 1
+                
+
         
         # If the IK-Target is too low, then change the position of the root bone (PelvisCenter) to bend the legs 
         # if targetCoordinates.y < self.bendThreshold and joint_id in {'RightHand', 'LeftHand'}:
@@ -358,19 +411,18 @@ class IntermediateSkeletonApplication():
 
     def FixAtCurrentPosititionRotation(self, joint_in : str):
         logger.debug("Fix other joints current position and rotation. ")
-        print("Fix other joints current position and rotation. ")
-        effector, offset = self.effectorMap.get(joint_in, (None, None))
-        if effector is None:
+        ikTarget, ikConstraint, offset = self.effectorMap.get(joint_in, (None, None))
+        if ikTarget is None:
             raise Exception(f"Unknown id for joint_in [{joint_in}]")
 
         # Blender pose bones: joint_in-related bones
         o           = self.object  # Blender's armature
-        IKTarget      = o.pose.bones[effector + "IK"]
-        HandBone      = o.pose.bones[effector] 
+        IKTarget      = o.pose.bones[self.ikConstraints[ikConstraint].subtarget] #o.pose.bones[ikTarget + "IK"]
+        HandBone      = o.pose.bones[ikTarget] 
 
         IKTarget.matrix = o.matrix_world @ HandBone.matrix
         
-        self.enableIKConstraint(effector)
+        self.enableIKConstraint(ikConstraint)
         return
     
     def getJointPosition(self, joint_id: str):
@@ -390,25 +442,25 @@ class IntermediateSkeletonApplication():
             rot       : rotation, any of (Quaternion, Euler, Matrix)
         """
         
-        logger.debug(f"Call to AddRotationConstraint({joint_id}, {rot})")
+        #logger.debug(f"Call to AddRotationConstraint({joint_id}, {rot})")
         skeletonQ = Quaternion()
         if isinstance(rot, (Euler, Matrix)):
             rot = rot.to_quaternion()
 
         bpy.context.view_layer.update()
-        effector, offset = self.effectorMap.get(joint_id, (None, None))
-        if effector is None:
+        ikTarget, ikConstraint, offset = self.effectorMap.get(joint_id, (None, None))
+        if ikTarget is None:
             logger.warning("Unknown joint_id [%s]", joint_id)
             return
             
-        self.enableCopyConstraint(effector)
+        self.enableCopyConstraint(ikTarget)
         bpy.context.view_layer.update()
 
         #blenderPoseBone = bpy.data.objects['lalala'].pose.bones[effector+"IK"]
         #logger.debug(f"rot: {rot}")
         
         for j in self.posture.Joints: # move to IKService
-            if j.ID == effector:
+            if j.ID == ikTarget:
                 #logger.debug(f"Rotating %s", j)
                 for channel in j.Channels:
                     if   channel == tavatar.MChannel.WRotation:
@@ -421,7 +473,7 @@ class IntermediateSkeletonApplication():
                         skeletonQ.z = rot.z
         
 
-        ikbone = bpy.data.objects['lalala'].pose.bones[effector+"IK"]
+        ikbone = self.object.pose.bones[self.ikConstraints[ikConstraint].subtarget] #bpy.data.objects['lalala'].pose.bones[ikTarget + "IK"]
         # backup translation component
         translation = Vector(ikbone.matrix.translation)
         # set rotation constraint, incorporate base-matrix to get the right rotation

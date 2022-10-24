@@ -78,9 +78,9 @@ class IKService(MInverseKinematicsService.Iface):
             . Error     list[double]
         """
         logger.debug("Call to CalculatIKPosture [%i]", self._IKcounter)
-        print(f"postureValues: {postureValues}")
-        print(f"Constraints: {constraints}")
-        print(f"properties: {properties}")
+        # print(f"postureValues: {postureValues}")
+        # print(f"Constraints: {constraints}")
+        # print(f"properties: {properties}")
         
         # preparations
         ## check avatar id
@@ -123,8 +123,10 @@ class IKService(MInverseKinematicsService.Iface):
         if not (LeftWrist and RightWrist) and LeftWrist:
             logger.debug("Only RightWrist set")
             avatar.FixAtCurrentPosititionRotation("RightWrist")
+            avatar.FixAtCurrentPosititionRotation("LeftWrist")
         elif not (LeftWrist and RightWrist) and RightWrist:
             avatar.FixAtCurrentPosititionRotation("LeftWrist")
+            avatar.FixAtCurrentPosititionRotation("RightWrist")
             logger.debug("Only LeftWrist set")
         elif (LeftWrist and RightWrist):
             logger.debug("Both Wrist set")

@@ -65,6 +65,8 @@ class EIKServer(IKService):
         self.id = id
         self.language = language
         self.ip = ip
+        self.internal_ip = ip
+        self.internal_port = port
         self.port = port
         self.server = None
         
@@ -156,12 +158,12 @@ class EIKServer(IKService):
                 
         return
     
-    def init_thrift(self, address, socket_address, port, nthreads=20):
-        logger.info("Initalizing Thrift-Server at %s::%i with %i threads.", address, port, nthreads)
+    def init_thrift(self, address, socket_address, port, socket_port, nthreads=20):
+        logger.info("Initalizing Thrift-Server at %s::%i with %i threads.", socket_address, socket_port, nthreads)
         IKProcessor = MInverseKinematicsService.Processor(self)
         if socket_address == "":
             print("No socket address provided. Listening to all connections with host=None as default")
-        trans_svr   = TSocket.TServerSocket(host = None if socket_address == "" else socket_address, port=port) # Deleted host=address because it cause trouble in Docker images and does not make any sense anyway.
+        trans_svr   = TSocket.TServerSocket(host = None if socket_address == "" else socket_address, port=socket_port) # Deleted host=address because it cause trouble in Docker images and does not make any sense anyway.
         # self.ownAddress = MIPAddress(Address=address, Port=port)
         trans_fac   = TTransport.TBufferedTransportFactory()
         proto_fac   = TCompactProtocol.TCompactProtocolFactory()
