@@ -48,8 +48,8 @@ DEFAULT_CONFIG = {
     }
 }
 def run(config, cli_args):
-    if cli_args.internal_address:
-        ip, port = cli_args.internal_address.split(':')
+    if cli_args.addressInternal:
+        ip, port = cli_args.addressInternal.split(':')
         if not "socket_address" in config["IKSERVER"] or config["IKSERVER"]["socket_address"] != "":
             config["IKSERVER"]["socket_address"] = ip
         config["IKSERVER"]["socket_port"] = port
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     run_parser.add_argument('-a', '--address', 
         help="Address and Port under which the Server will operate",
         default='')
-    run_parser.add_argument('-aint', '--internal_address', 
+    run_parser.add_argument('-aint', '--addressInternal', 
         help="Address and Port under which the Server will be started internally",
         default='')
     run_parser.add_argument('-r', '--registry',
